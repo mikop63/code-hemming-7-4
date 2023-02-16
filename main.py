@@ -63,6 +63,9 @@ def standart(bit):
 def main():
     # bit = '1011'
     bit = input('Введите 4 бита (например "0101"): ')
+    while not re.match("^[01].{3}$", bit):
+        bit = input('Я же сказал 4 бита!!! Это 4 раза нужно нажать "0" или "1"\nПопробуй еще раз ввести : ')
+
 
     bit_arr = standart(bit)
     for i in range(len(bit_arr)):
@@ -70,6 +73,8 @@ def main():
     print('Кодовая комбинация до добавления ошибки:', bit_arr[0])
 
     bit_error = input('В какой разряд внести ошибку (от 1 до 4): ')
+    while not re.match("^[1-4]$", bit_error):
+        bit_error = input('Я же сказал от 1 до 4!!!\nПопробуй еще раз: ')
     bit_error = int(bit_error)
 
     bit_arr[0][bit_error - 1] = not bit_arr[0][bit_error - 1]
