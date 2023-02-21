@@ -1,5 +1,24 @@
 from BitVector import *
 import re
+import random
+
+
+def generate_random_bit(length, probability_of_one):
+    """
+    Функция, которая генерирует случайный битовый вектор заданной длины с заданной вероятностью
+    появления единицы (1) в нем.
+
+    :param length: Длина битового вектора.
+    :param probability_of_one: Вероятность появления единицы (1) в битовом векторе (от 0 до 1).
+    :return: Сгенерированная последовательность.
+    """
+    random_string = ''
+    for i in range(length):
+        if random.random() < probability_of_one:  # с вероятностью probability_of_one генерируем 1
+            random_string += '1'
+        else:  # с вероятностью 1-probability_of_one генерируем 0
+            random_string += '0'
+    return random_string
 
 def hamming_encoding(message):
     '''
@@ -61,16 +80,22 @@ def standart(bit):
 
 
 def main():
-    # bit = '1011'
-    bit = input('Введите 4 бита (например "0101"): ')
-    while not re.match("^[01].{3}$", bit):
-        bit = input('Я же сказал 4 бита!!! Это 4 раза нужно нажать "0" или "1"\nПопробуй еще раз ввести : ')
-
+    length = int(input('Введите длину последовательности: '))
+    probability_of_one = float(input('Введите вероятность появления 1: '))
+    # probability_of_one = 0.8
+    while not probability_of_one < 1:
+        probability_of_one = input('Введите вероятность появления 1 (например 0.6)')
+    bit = generate_random_bit(length, probability_of_one)
 
     bit_arr = standart(bit)
+    print('Комбинация до добавления ошибки:', )
+    for word in bit_arr:
+        print(word)
     for i in range(len(bit_arr)):
         bit_arr[i] = hamming_encoding(bit_arr[i])
-    print('Кодовая комбинация до добавления ошибки:', bit_arr[0])
+    print('Кодовая комбинация до добавления ошибки:', )
+    for word in bit_arr:
+        print(word)
 
     bit_error = input('В какой разряд внести ошибку (от 1 до 4): ')
     while not re.match("^[1-4]$", bit_error):
