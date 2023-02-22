@@ -54,6 +54,13 @@ def hamming_encoding(message):
     return output_bits
 
 
+def channel_simulation(bit, err_probability):
+    for i in range(bit.length()):
+        if random.random() < err_probability:  # с вероятностью probability_of_one генерируем 1
+            bit[i] = not bit[i]
+    return bit
+
+
 def get_error_position(received_code):
     syndrome_table = {
         "101": 1,
@@ -103,34 +110,44 @@ def main():
         probability_of_one = input('Введите вероятность появления 1 (например 0.6)')
     bit = generate_random_bit(length, probability_of_one)
 
-    bit_arr = standart(bit)
-    print('Комбинация до добавления ошибки:', )
-    for word in bit_arr:
-        print(word)
-    for i in range(len(bit_arr)):
-        bit_arr[i] = hamming_encoding(bit_arr[i])
-    print('Кодовая комбинация до добавления ошибки:', )
-    for word in bit_arr:
-        print(word)
+    bit_array = standart(bit) # Комбинация до добавления ошибки
+    bit_arr_encode = bit_array.copy()
+    # print('Комбинация до добавления ошибки:', )
+    # [print(word) for word in bit_array]
+    for i in range(len(bit_arr_encode)):
+        bit_arr_encode[i] = hamming_encoding(bit_arr_encode[i]) # Кодовая комбинация до добавления ошибки
+    # print('Кодовая комбинация до добавления ошибки:', )
+    # [print(word) for word in bit_arr_encode]
 
-    bit_error = input('В какой разряд внести ошибку (от 1 до 4): ')
-    while not re.match("^[1-4]$", bit_error):
-        bit_error = input('Я же сказал от 1 до 4!!!\nПопробуй еще раз: ')
-    bit_error = int(bit_error)
 
-    bit_arr[0][bit_error - 1] = not bit_arr[0][bit_error - 1]
-    print('Кодовая комбинация после добавления ошибки:', bit_arr[0])
+    # для канала передачи все преобразуем в одну длинную последовательность
+    bit_code = BitVector(size=len(bit_arr_encode) * 7)
+    for i, bit_vector in enumerate(bit_arr_encode):
+        bit_code[i * 7:(i + 1) * 7] = bit_vector
 
-    for bit_with_err in bit_arr:
-        position = get_error_position(bit_with_err)
-        if position is None:
-            print("Ошибки нет")
+    err_probability = 0.01
+    bit_long_str_with_error = channel_simulation(bit_code, err_probability) # кодовая комбинация после добавления ошибки
+
+    # print('Кодовая комбинация после добавления ошибки:', bit_long_str_with_error)
+    bit_err_arr = []
+
+    for i in range(0, len(bit_long_str_with_error), 7):
+        bit_err_word = bit_long_str_with_error[i:i + 7]
+        bit_err_arr.append(bit_err_word)                    # получаем массив с элементоми по 7 байт в которых есть ошибка
+    # print(bit_arr_encode[0])
+    # print(bit_err_arr[0])
+    position = 0
+    for bit_with_err in bit_err_arr:
+        position_err = get_error_position(bit_with_err)
+        if position_err is None:
+            print(f"{position}). Ошибки нет")
         else:
-            print(f'Ошибка в разряде №{position}')
-            print(f'Без ошибок: {bit}')
-            print(f'С ошибками: {bit_with_err[:4]}')
-            bit_with_err[position - 1] = not bit_with_err[position - 1]
+            print(f'{position}). Ошибка в разряде №{position_err} {"В проверочном бите" if position_err > 4 else ""}')
+            print(f'Без ошибоки:{bit_array[position]}')
+            print(f'С ошибкой: \t{bit_with_err[:4]}')
+            bit_with_err[position_err - 1] = not bit_with_err[position_err - 1]
             print(f'После исправления: {bit_with_err[:4]}')
+        position += 1
 
 
 if __name__ == '__main__':
