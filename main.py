@@ -20,6 +20,18 @@ def generate_random_bit(length, probability_of_one):
             random_string += '0'
     return random_string
 
+
+def generate_bit_from_str(text):
+    """
+    Функция, которая преобразует биты в строку.
+
+    :param text: Входной текст который преобразуется в строку.
+    :return: Сгенерированная последовательность.
+    """
+    binary_string = ''.join([format(ord(c), '08b') for c in text])
+    return binary_string
+
+
 def hamming_encoding(message):
     '''
     добавляем проверочные биты
@@ -82,6 +94,7 @@ def standart(bit):
 def main():
     length = int(input('Введите длину последовательности: '))
     probability_of_one = float(input('Введите вероятность появления 1: '))
+    # TODO: добавить возсожно ввода текста. Функция уже написанна
     # probability_of_one = 0.8
     while not probability_of_one < 1:
         probability_of_one = input('Введите вероятность появления 1 (например 0.6)')
