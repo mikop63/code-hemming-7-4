@@ -1,6 +1,7 @@
 from BitVector import *
 import re
 import random
+import time
 
 
 def generate_random_bit(length, probability_of_one):
@@ -55,10 +56,12 @@ def hamming_encoding(message):
 
 
 def channel_simulation(bit, err_probability):
+    error_count = 0
     for i in range(bit.length()):
         if random.random() < err_probability:  # с вероятностью probability_of_one генерируем 1
             bit[i] = not bit[i]
-    return bit
+            error_count += 1
+    return bit, error_count
 
 
 def get_error_position(received_code):
@@ -126,7 +129,7 @@ def main():
         bit_code[i * 7:(i + 1) * 7] = bit_vector
 
     err_probability = 0.01
-    bit_long_str_with_error = channel_simulation(bit_code, err_probability) # кодовая комбинация после добавления ошибки
+    bit_long_str_with_error, error_total_count = channel_simulation(bit_code, err_probability) # кодовая комбинация после добавления ошибки
 
     # print('Кодовая комбинация после добавления ошибки:', bit_long_str_with_error)
     bit_err_arr = []
@@ -137,18 +140,29 @@ def main():
     # print(bit_arr_encode[0])
     # print(bit_err_arr[0])
     position = 0
+    err_found_count = 0
     for bit_with_err in bit_err_arr:
         position_err = get_error_position(bit_with_err)
         if position_err is None:
-            print(f"{position}). Ошибки нет")
+            # print(f"{position}). Ошибки нет")
+            pass
         else:
             print(f'{position}). Ошибка в разряде №{position_err} {"В проверочном бите" if position_err > 4 else ""}')
             print(f'Без ошибоки:{bit_array[position]}')
             print(f'С ошибкой: \t{bit_with_err[:4]}')
             bit_with_err[position_err - 1] = not bit_with_err[position_err - 1]
             print(f'После исправления: {bit_with_err[:4]}')
+            err_found_count += 1
         position += 1
-
+    print(f'Передано: {length} бит')
+    print(f'Передано комбинаций: {position-1}')
+    print('Допущено ошибок:', error_total_count)
+    print('Найдено ошибок:', err_found_count)
 
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    end_time = time.time()
+    duration_in_seconds = end_time - start_time
+    minutes, seconds = divmod(duration_in_seconds, 60)
+    print(f"Программа выполнялась: {int(minutes)} мин. {int(seconds)} сек.")
