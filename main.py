@@ -34,7 +34,10 @@ def generate_bit_from_str(text):
 
 def hamming_encoding(message):
     '''
-    добавляем проверочные биты
+    Функция, которая выполняет кодирование Хемминга (7,4)
+
+    :param message: Входное сообщение из битов.
+    :return: Последовательность входных битов вместе с проверочными.
     '''
     # Исходный входной битовый вектор
     input_bits = BitVector(bitstring=message)
