@@ -115,7 +115,6 @@ def main():
 
     # Комбинация до добавления ошибки
     bit_array = standart(bit)
-    bit_arr_encode = bit_array.copy()  # копия bit_array, в которую отправим в канал
     # print('Комбинация до добавления ошибки:', )
     # [print(word) for word in bit_array]
     bit_arr_encode = [hamming_encoding(bit) for bit in bit_array]
