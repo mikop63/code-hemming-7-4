@@ -8,8 +8,8 @@ from numba import njit
 @njit
 def generate_random_bit(length, probability_of_one):
     """
-    Функция, которая генерирует случайный битовый вектор заданной длины с заданной вероятностью
-    появления единицы (1) в нем.
+    Функция, которая генерирует случайную последоватльность битов заданной длины
+    с заранее заданной вероятностью появляется единица.
 
     :param length: Длина битового вектора.
     :param probability_of_one: Вероятность появления единицы (1) в битовом векторе (от 0 до 1).
@@ -20,27 +20,7 @@ def generate_random_bit(length, probability_of_one):
     return ''.join(bits)
 
 
-@njit
-def standart(bit):
-    """
-    разбиваем длинную строку на биты по 4 штуки
-    """
-    return [bit[i:i + 4].zfill(4) for i in range(0, len(bit), 4)]
-
-
-@njit(cache=True)
-def generate_bit_from_str(text):
-    """
-    Функция, которая преобразует биты в строку.
-
-    :param text: Входной текст который преобразуется в строку.
-    :return: Сгенерированная последовательность.
-    """
-    binary_string = ''.join([format(ord(c), '08b') for c in text])
-    return binary_string
-
-
-def hamming_encoding(message):
+def hamming_encod(message):
     """
     Функция, которая выполняет кодирование Хемминга (7,4)
 
@@ -58,115 +38,117 @@ def hamming_encoding(message):
 
 def channel_simulation(bit, err_probability):
     """
-    Симуляция канала передачи сообщения
+    Симуляция канала передачи сообщения.
+    При передачи сообщения в канале возникают ошибки
 
     :param bit: Входное сообщение из длинной последовательности битов.
     :param err_probability: Вероятность ошибки.
     Вероятность должна быть маленькая, чтобы в каждой последовательности было не более 1 ошибки
     :return bit: Последовательность входных битов вместе с проверочными.
-    :return error_count: Колличество допущенных ошибок, чтобы в конце провеить сколько нашли и исправили.
+    :return real_error_count: Колличество допущенных ошибок, чтобы в конце провеить сколько нашли и исправили.
     """
-    error_count = 0
-    for i, bit_elem in enumerate(bit):
-        if random.random() < err_probability:  # с вероятностью probability_of_one генерируем 1
+    real_error_count = 0
+    for i in range(len(bit)):
+        if random.random() < err_probability:  # с вероятностью err_probability генерируем 1
             bit[i] = not bit[i]
-            error_count += 1
-    return bit, error_count
+            real_error_count += 1
+
+    return bit, real_error_count
 
 
-def get_error_position(received_code):
+def hamming_decod(received_code):
     """
-    Получение места ошибки в последовательности
+    Получение места ошибки в последовательности принятых битов
+    Исправление этой ошибки
 
     :param received_code: Входное сообщение из последовательности битов.
-    :return error_position: Место ошибки в этой последовательности.
+    :return error_position: Исправленное сообщение.
     """
     syndrome_table = {
-        0b101: 1,
-        0b110: 2,
-        0b111: 3,
-        0b011: 4,
-        0b100: 5,
-        0b010: 6,
-        0b001: 7
+        0b101: 0,
+        0b110: 1,
+        0b111: 2,
+        0b011: 3,
+        0b100: 4,
+        0b010: 5,
+        0b001: 6
     }
 
     syndrome = ((received_code[4] ^ received_code[0] ^ received_code[1] ^ received_code[2]) << 2) | \
                ((received_code[5] ^ received_code[1] ^ received_code[2] ^ received_code[3]) << 1) | \
                (received_code[6] ^ received_code[0] ^ received_code[2] ^ received_code[3])
     error_position = syndrome_table.get(syndrome)
-    return error_position if error_position is not None else None  # если ошибки нет, вернется None
+    if error_position is not None:
+        received_code[error_position] = not received_code[error_position]
+    return received_code
+
+
+def hamming_get_data(brx):
+    """
+    Получение информационных битов из Кода Хемминга
+
+    :param brx: Получение 7 битов. 4 информационных + 3 проверочных
+    :return: 4 информационных бита
+    """
+    a = brx
+    first_four = a[:4]
+    return first_four
+
+def compareVectors(a, b):
+    """
+    Подсчет количества ошибок
+
+    :return: число отличающихся бит между a и b
+    """
+    count = 0
+    # переводим к одному типу
+    if isinstance(a, str):
+        a = bitarray(a)
+    if isinstance(b, str):
+        b = bitarray(b)
+
+    for i in range(len(a)):
+        c = a[i] ^ b[i]
+        count += c
+
+    return count
 
 
 def main():
-    # length = int(input('Введите длину последовательности: '))
-    length = 40000000
-    # probability_of_one = float(input('Введите вероятность появления 1: '))
+    # length = int(input('Введите колличество блоков: '))
+    length = 1000000
     probability_of_one = 0.8
-    # TODO: добавить возсожно ввода текста. Функция уже написанна
 
-    bit = generate_random_bit(length, probability_of_one)
+    # length = 10000
+    err_probabilitys = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9]
+    NErrBlocks = [0] * len(err_probabilitys)
+    NErrBits = [0] * len(err_probabilitys)
+    real_error_count = [0] * len(err_probabilitys)
+    # tx - переданные (transmitted)
+    # rx - принятые (received)
+    for i in range(length):
+        atx = generate_random_bit(4, probability_of_one)
+        btx = hamming_encod(atx)
+        for i in range(len(err_probabilitys)):
+            c, errors = channel_simulation(btx.copy(), err_probabilitys[i]) # если не передаваить btx.copy, тогда переменная btx перезапишется
+            real_error_count[i] += errors # получаем реальное количество ошибок
+            brx = hamming_decod(c)
+            arx = hamming_get_data(brx)
+            # Вероятность ошибки (P) по оси Х
+            # частость ошибки в канале
+            # частость ошибки после декадирования (P*) по оси Y
+            NErrBlocks[i] += compareVectors(btx, brx)
+            NErrBits[i] += compareVectors(atx, arx)
 
-    # засекаем время
-    end_time = time.time()
-    duration_in_seconds = end_time - start_time
-    minutes, seconds = divmod(duration_in_seconds, 60)
-    print(f"Генерация: {int(minutes)} мин. {int(seconds)} сек.")
+    print(f'Колчисетво битов {length*4}')
+    print(f'Теоретическая вероятность ошибки: {err_probabilitys}')
+    print(f'Частость ошибки в канале: {real_error_count}')
+    print(f'Частость ошибки после декодирования: {NErrBits}')
 
-    # Комбинация до добавления ошибки
-    bit_array = standart(bit)
-    # print('Комбинация до добавления ошибки:', )
-    # [print(word) for word in bit_array]
-    bit_arr_encode = [hamming_encoding(bit) for bit in bit_array]
-    # print('Кодовая комбинация до добавления ошибки:', )
-    # [print(word) for word in bit_arr_encode]
-
-    end_time = time.time()
-    duration_in_seconds = end_time - start_time
-    minutes, seconds = divmod(duration_in_seconds, 60)
-    print(f"Кодирование Хемминга выполнялась: {int(minutes)} мин. {int(seconds)} сек.")
-
-    # для канала передачи все преобразуем в одну длинную последовательность
-    bit_code = bitarray(len(bit_arr_encode) * 7)
-    for i, bit in enumerate(bit_arr_encode):
-        start = i * 7
-        end = (i + 1) * 7
-        bit_code[start:end] = bit
-
-    err_probability = 0.01
-    bit_long_str_with_error, error_total_count = channel_simulation(bit_code,
-                                                                    err_probability)  # кодовая комбинация после добавления ошибки
-
-    end_time = time.time()
-    duration_in_seconds = end_time - start_time
-    minutes, seconds = divmod(duration_in_seconds, 60)
-    print(f"Симуляция канала: {int(minutes)} мин. {int(seconds)} сек.")
-
-    # print('Кодовая комбинация после добавления ошибки:', bit_long_str_with_error)
-    # получаем массив с элементоми по 7 байт в которых есть ошибка
-    bit_err_arr = [bit_long_str_with_error[i:i + 7] for i in range(0, len(bit_long_str_with_error), 7)]
-
-    position = 0
-    err_found_count = 0
-    for bit_with_err in bit_err_arr:
-        position_err = get_error_position(bit_with_err)
-        if position_err is None:
-            # print(f"{position}). Ошибки нет")
-            pass
-        else:
-            err_found_count += 1
-            if length < 15:
-                print(
-                    f'\n{position}). Ошибка в разряде №{position_err} {"В проверочном бите" if position_err > 4 else ""}')
-                print(f'Без ошибоки:{bit_array[position]}')
-                print(f'С ошибкой: \t{bit_with_err[:4].to01()}')
-                bit_with_err[int(position_err) - 1] = not bit_with_err[int(position_err) - 1]
-                print(f'После исправления: {bit_with_err[:4].to01()}')
-        position += 1
-    print(f'\nПередано: {length} бит')
-    print(f'Передано комбинаций: {position - 1}')
-    print('Допущено ошибок:', error_total_count)
-    print('Найдено ошибок:', err_found_count)
+    for i in range(len(NErrBits)):
+        NErrBits[i] /= length*4
+    print(f'Реальная вероятность ошибки в канале: {real_error_count}')
+    print(f'Вероятность ошибки после декодирования: {NErrBits}')
 
 
 if __name__ == '__main__':
