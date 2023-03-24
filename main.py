@@ -3,6 +3,7 @@ import random
 import time
 import numpy as np
 from numba import njit
+import matplotlib.pyplot as plt
 
 
 @njit
@@ -116,11 +117,11 @@ def compareVectors(a, b):
 
 def main():
     # length = int(input('Введите колличество блоков: '))
-    length = 1000000
+    length = 10000000
+    # length = 100000
     probability_of_one = 0.8
 
-    # length = 10000
-    err_probabilitys = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9]
+    err_probabilitys = [0.001, 0.003, 0.005, 0.01, 0.03, 0.05, 0.1]
     NErrBlocks = [0] * len(err_probabilitys)
     NErrBits = [0] * len(err_probabilitys)
     real_error_count = [0] * len(err_probabilitys)
@@ -150,6 +151,30 @@ def main():
     print(f'Реальная вероятность ошибки в канале: {real_error_count}')
     print(f'Вероятность ошибки после декодирования: {NErrBits}')
 
+    # Рисование линии ошибки после декодирования
+    plt.semilogx(err_probabilitys, NErrBits)
+    plt.semilogy(err_probabilitys, NErrBits)
+
+    # Рисование линий теоретической вероятности ошибки
+    plt.semilogy(err_probabilitys, err_probabilitys)
+
+    # Определение границ допуска
+    limit = 0.05
+    upper_limit = [p * (1 - limit) for p in NErrBits]
+    lower_limit = [p * (1 + limit) for p in NErrBits]
+    # Рисование линий допуска
+    plt.semilogy(err_probabilitys, upper_limit, 'r--', label='Верхний допуск')
+    plt.semilogy(err_probabilitys, lower_limit, 'g--', label='Нижний допуск')
+
+    # Добавление сетки на график
+    plt.grid(True, which="both")
+
+    # Настройки осей и заголовка графика
+    plt.xlabel('Вероятность ошибки')
+    plt.ylabel('Частость ошибки после декадирования')
+    plt.title('График')
+    # plt.legend()
+
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -158,3 +183,4 @@ if __name__ == '__main__':
     duration_in_seconds = end_time - start_time
     minutes, seconds = divmod(duration_in_seconds, 60)
     print(f"Программа выполнялась за: {int(minutes)} мин. {int(seconds)} сек.")
+    plt.show()  # Отображение графика
