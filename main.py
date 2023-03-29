@@ -117,11 +117,12 @@ def compareVectors(a, b):
 
 def main():
     # length = int(input('Введите колличество блоков: '))
-    length = 10000000
-    # length = 100000
+    length = 5000000
+    # length = 10000
     probability_of_one = 0.8
 
     err_probabilitys = [0.001, 0.003, 0.005, 0.01, 0.03, 0.05, 0.1]
+    # err_probabilitys = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 0.7]
     NErrBlocks = [0] * len(err_probabilitys)
     NErrBits = [0] * len(err_probabilitys)
     real_error_count = [0] * len(err_probabilitys)
@@ -153,18 +154,27 @@ def main():
 
     # Рисование линии ошибки после декодирования
     plt.semilogx(err_probabilitys, NErrBits)
-    plt.semilogy(err_probabilitys, NErrBits)
+    plt.semilogy(err_probabilitys, NErrBits,
+                 color='r',
+                 label='Вероятность ошибки после декодирования')
 
     # Рисование линий теоретической вероятности ошибки
-    plt.semilogy(err_probabilitys, err_probabilitys)
+    plt.semilogy(err_probabilitys, err_probabilitys,
+                 color='b',
+                 label='Теоретическая вероятность ошибки')
 
     # Определение границ допуска
     limit = 0.05
     upper_limit = [p * (1 - limit) for p in NErrBits]
     lower_limit = [p * (1 + limit) for p in NErrBits]
     # Рисование линий допуска
-    plt.semilogy(err_probabilitys, upper_limit, 'r--', label='Верхний допуск')
-    plt.semilogy(err_probabilitys, lower_limit, 'g--', label='Нижний допуск')
+    plt.semilogy(err_probabilitys, upper_limit,
+                 color='g',
+                 linestyle='--',
+                 label='Допуск')
+    plt.semilogy(err_probabilitys, lower_limit,
+                 color='g',
+                 linestyle='--')
 
     # Добавление сетки на график
     plt.grid(True, which="both")
@@ -173,7 +183,7 @@ def main():
     plt.xlabel('Вероятность ошибки')
     plt.ylabel('Частость ошибки после декадирования')
     plt.title('График')
-    # plt.legend()
+    plt.legend()
 
 
 if __name__ == '__main__':
