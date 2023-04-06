@@ -95,6 +95,7 @@ def hamming_get_data(brx):
     first_four = a[:4]
     return first_four
 
+
 def compareVectors(a, b):
     """
     Подсчет количества ошибок
@@ -115,14 +116,27 @@ def compareVectors(a, b):
     return count
 
 
-def main():
-    # length = int(input('Введите колличество блоков: '))
-    length = 5000000
-    # length = 10000
+def interval(p, n, limit=0.99):
+    """
+    Расчет доверительного интервала для построения границ допуска
+
+    :param p: вероятность ошибки
+    :param n: количество бит
+    :param limit:
+    :return:
+    """
+    # Вычисление значения интеграла
+
+    t = np.linspace(-limit, limit)  # пределы интегрирования
+    integral_value = np.trapz(-np.exp((t ** 2) / 2), t) # считаем интеграл
+    F = 1 / np.sqrt(2 * np.pi) * integral_value
+    return F * np.sqrt(p * (1 - p) / n)
+
+
+def main(length = 5000000):
     probability_of_one = 0.8
 
     err_probabilitys = [0.001, 0.003, 0.005, 0.01, 0.03, 0.05, 0.1]
-    # err_probabilitys = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 0.7]
     NErrBlocks = [0] * len(err_probabilitys)
     NErrBits = [0] * len(err_probabilitys)
     real_error_count = [0] * len(err_probabilitys)
@@ -132,8 +146,9 @@ def main():
         atx = generate_random_bit(4, probability_of_one)
         btx = hamming_encod(atx)
         for i in range(len(err_probabilitys)):
-            c, errors = channel_simulation(btx.copy(), err_probabilitys[i]) # если не передаваить btx.copy, тогда переменная btx перезапишется
-            real_error_count[i] += errors # получаем реальное количество ошибок
+            c, errors = channel_simulation(btx.copy(), err_probabilitys[
+                i])  # если не передаваить btx.copy, тогда переменная btx перезапишется
+            real_error_count[i] += errors  # получаем реальное количество ошибок
             brx = hamming_decod(c)
             arx = hamming_get_data(brx)
             # Вероятность ошибки (P) по оси Х
@@ -142,53 +157,82 @@ def main():
             NErrBlocks[i] += compareVectors(btx, brx)
             NErrBits[i] += compareVectors(atx, arx)
 
-    print(f'Колчисетво битов {length*4}')
+    print(f'Количество битов {length * 4}')
     print(f'Теоретическая вероятность ошибки: {err_probabilitys}')
     print(f'Частость ошибки в канале: {real_error_count}')
     print(f'Частость ошибки после декодирования: {NErrBits}')
 
     for i in range(len(NErrBits)):
-        NErrBits[i] /= length*4
+        NErrBits[i] /= length * 4
     print(f'Реальная вероятность ошибки в канале: {real_error_count}')
     print(f'Вероятность ошибки после декодирования: {NErrBits}')
 
+    # ------------- Задание данных для 1ого графика -------------
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot()
+
     # Рисование линии ошибки после декодирования
-    plt.semilogx(err_probabilitys, NErrBits)
-    plt.semilogy(err_probabilitys, NErrBits,
+    ax1.semilogx(err_probabilitys, NErrBits)
+    ax1.semilogy(err_probabilitys,
+                 NErrBits,
+                 color='r',
+                 label='Ошибки после декодирования')
+
+    # Рисование линий теоретической вероятности ошибки
+    ax1.semilogy(err_probabilitys,
+                 err_probabilitys,
+                 color='b',
+                 label='Теоретические ошибки в канале')
+
+    # Определение границ допуска
+    upper_limit = [p + interval(p, length) for p in NErrBits]
+    lower_limit = [p - interval(p, length) for p in NErrBits]
+    # Рисование линий допуска
+    ax1.semilogy(err_probabilitys, upper_limit,
+                 color='g',
+                 linestyle='--',
+                 label='Допуск')
+    ax1.semilogy(err_probabilitys, lower_limit,
+                 color='g',
+                 linestyle='--')
+
+    # Настройки осей и заголовка графика
+    ax1.set_xlabel('Вероятность ошибки')
+    ax1.set_title('Вероятность ошибки на бит')
+    # Добавление сетки на график
+    ax1.grid(True, which="both")
+    ax1.legend()
+
+    # ------------- Задание данных для 2ого графика -------------
+    err_probability = [21 * (p ** 2) for p in err_probabilitys]
+    NErrBlocks = [1-(1-(p / length))**7 for p in NErrBlocks]
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot()
+
+    # Рисование линии ошибки после декодирования
+    ax2.semilogx(err_probabilitys, NErrBlocks)
+    ax2.semilogy(err_probabilitys, NErrBlocks,
                  color='r',
                  label='Вероятность ошибки после декодирования')
 
     # Рисование линий теоретической вероятности ошибки
-    plt.semilogy(err_probabilitys, err_probabilitys,
+    ax2.semilogx(err_probabilitys, NErrBlocks)
+    ax2.semilogy(err_probabilitys, err_probability,
                  color='b',
                  label='Теоретическая вероятность ошибки')
 
-    # Определение границ допуска
-    limit = 0.05
-    upper_limit = [p * (1 - limit) for p in NErrBits]
-    lower_limit = [p * (1 + limit) for p in NErrBits]
-    # Рисование линий допуска
-    plt.semilogy(err_probabilitys, upper_limit,
-                 color='g',
-                 linestyle='--',
-                 label='Допуск')
-    plt.semilogy(err_probabilitys, lower_limit,
-                 color='g',
-                 linestyle='--')
-
-    # Добавление сетки на график
-    plt.grid(True, which="both")
-
     # Настройки осей и заголовка графика
-    plt.xlabel('Вероятность ошибки')
-    plt.ylabel('Частость ошибки после декадирования')
-    plt.title('График')
-    plt.legend()
+    ax2.set_xlabel('Вероятность ошибки')
+    ax2.set_title('Вероятность ошибки на блок')
+    # Добавление сетки на график
+    ax2.grid(True, which="both")
+    ax2.legend()
 
 
 if __name__ == '__main__':
     start_time = time.time()
-    main()
+    length = int(input('Введите количество блоков: '))
+    main(length)
     end_time = time.time()
     duration_in_seconds = end_time - start_time
     minutes, seconds = divmod(duration_in_seconds, 60)
